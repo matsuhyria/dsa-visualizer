@@ -1,10 +1,11 @@
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_init.h>
+#include <SDL3/SDL_oldnames.h>
+#include <SDL3/SDL_rect.h>
 #include <SDL3/SDL_render.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
-#include <stdio.h>
 #include <SDL3/SDL.h>
 
 #define W_WIDTH 800
@@ -20,8 +21,13 @@ App app = {0};
 int initSDL(void);
 void cleanupSDL(void);
 void mainLoop(void);
+
 void prepareScene(void);
 void presentScene(void);
+void drawRect(int x, int y, int size);
+void drawArray(void);
+
+
 
 int main(void) {
     if(!initSDL()) {
@@ -81,6 +87,7 @@ void mainLoop(void) {
         }
 
         prepareScene();
+
         presentScene();
         SDL_Delay(16);
     }
@@ -89,8 +96,27 @@ void mainLoop(void) {
 void prepareScene(void) {
     SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 255);
     SDL_RenderClear(app.renderer);
+    drawArray();
+
 }
 
 void presentScene(void) {
     SDL_RenderPresent(app.renderer);
 }
+
+void drawRect(int x, int y, int size) {
+    SDL_SetRenderDrawColor(app.renderer, 255, 255, 255, 255);
+    SDL_FRect r = { x, y, size, size};
+    SDL_RenderRect(app.renderer, &r);
+}
+
+void drawArray(void) {
+    int offsetX = 0;
+    int offsetY = 0;
+    int size = 100;
+    for(int i = 0; i < 8; i++) {
+        drawRect(offsetX, offsetY, size);
+        offsetX += 100;
+    }
+}
+
