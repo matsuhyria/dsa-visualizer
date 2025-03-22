@@ -1,88 +1,96 @@
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_events.h>
-#include <SDL2/SDL_hints.h>
-#include <SDL2/SDL_render.h>
-#include <SDL2/SDL_video.h>
+#include <SDL3/SDL_error.h>
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_init.h>
+#include <SDL3/SDL_render.h>
+#include <SDL3/SDL_timer.h>
+#include <SDL3/SDL_video.h>
+#include <stdio.h>
+#include <SDL3/SDL.h>
 
 #define W_WIDTH 800
 #define W_HEIGHT 600
 
-typedef struct {
+typedef struct AppContext{
+    SDL_Window* window;
     SDL_Renderer *renderer;
-    SDL_Window *window;
 } App;
 
-App app;
+App app = {0};
 
-void mainLoop(void);
-void initSDL(void);
-void getInput(void);
+int initSDL(void);
 void cleanupSDL(void);
+void mainLoop(void);
+void prepareScene(void);
+void presentScene(void);
 
 int main(void) {
-    initSDL();
+    if(!initSDL()) {
+        cleanupSDL();
+        return 1;
+    }
 
     mainLoop();
+
     cleanupSDL();
     return 0;
 }
 
-void mainLoop() {
-    int running = 1;
+int initSDL(void) {
+    unsigned int initFlags = SDL_INIT_VIDEO | SDL_INIT_EVENTS;
+    unsigned int windowFlags = SDL_WINDOW_HIDDEN;
 
-    while(running) {
-        getInput();
-    }
-}
-
-void initSDL(void) {
-    int rendererFlags, windowFlags;
-
-    rendererFlags = SDL_RENDERER_ACCELERATED;
-
-    windowFlags = 0;
-
-    if(SDL_Init(SDL_INIT_VIDEO) < 0) {
-        printf("Could not initialize SDL: %s\n", SDL_GetError());
-        exit(1);
+    if(!SDL_Init(initFlags)) {
+        SDL_Log("SDL_Init error: %s\n", SDL_GetError());
+        return 0;
     }
 
-    app.window = SDL_CreateWindow("DSA-Visualizer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, W_WIDTH, W_HEIGHT, windowFlags);
-
+    app.window = SDL_CreateWindow("DSA-Visualizer", W_WIDTH, W_HEIGHT, windowFlags);
     if(!app.window) {
-        printf("Failed to open SDL window: %s\n", SDL_GetError());
-        SDL_Quit();
-        exit(1);
+        SDL_Log("SDL_CreateWindow error: %s\n", SDL_GetError());
+        return 0;
     }
 
-    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-
-    app.renderer = SDL_CreateRenderer(app.window, -1, rendererFlags);
-
+    app.renderer = SDL_CreateRenderer(app.window, NULL);
     if(!app.renderer) {
-        printf("Failed to create SDL renderer: %s\n", SDL_GetError());
-        SDL_DestroyWindow(app.window);
-        SDL_Quit();
-        exit(1);
+        SDL_Log("SDL_CreateRenderer error: %s\n", SDL_GetError());
+        return 0;
     }
-}
 
-void getInput() {
-    SDL_Event event;
-    while(SDL_PollEvent(&event)) {
-        switch (event.type) {
-            case SDL_QUIT:
-                cleanupSDL();
-                exit(0);
+    SDL_ShowWindow(app.window);
 
-            default:
-                break;
-        }
-    }
+    return 1;
 }
 
 void cleanupSDL(void) {
     SDL_DestroyRenderer(app.renderer);
     SDL_DestroyWindow(app.window);
     SDL_Quit();
+}
+
+void mainLoop(void) {
+    int running = 1;
+
+    while(running) {
+        SDL_Event event;
+        while(SDL_PollEvent(&event)) {
+            switch(event.type) {
+                case SDL_EVENT_QUIT:
+                    running = 0;
+                    break;
+            }
+        }
+
+        prepareScene();
+        presentScene();
+        SDL_Delay(16);
+    }
+}
+
+void prepareScene(void) {
+    SDL_SetRenderDrawColor(app.renderer, 0, 0, 0, 255);
+    SDL_RenderClear(app.renderer);
+}
+
+void presentScene(void) {
+    SDL_RenderPresent(app.renderer);
 }
